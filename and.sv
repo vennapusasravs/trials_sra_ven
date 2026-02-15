@@ -1,6 +1,6 @@
 module and(
   input a,
   input b,
-  output logic y);
+  output loic y);
   assign y =a&b;
 endmodule
