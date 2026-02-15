@@ -4,7 +4,5 @@ module mux2_1 (
   input b,
   input sel,
   output logic y);
-  always_comb begin
-    y = sel ? b:a;
-  end
+   assign  y = sel ? b:a;
 endmodule
