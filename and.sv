@@ -2,5 +2,5 @@ module and(
   input a,
   input b,
   output logic y);
-  assigned y =a&b;
+  assign y =a&b;
 endmodule
