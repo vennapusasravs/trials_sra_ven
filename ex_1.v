@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 // Code your design here
 module ff1 (
 input sig_A,  // input for the first flipflop
