@@ -20,7 +20,7 @@ module sync_updowncounter (
     else 
        begin
       pulse <= 1'b0;
-     if (load_en && load_pulse)
+     if (load_en & load_pulse)
 	 begin
         count <= 17'h15180;   // load 86400
       end	  
