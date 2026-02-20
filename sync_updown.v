@@ -14,7 +14,7 @@ module sync_updowncounter (
     begin
     if (!rst_n)
       begin
-      count <= 17'h00000;
+      count <= 17'h0;
       pulse <= 1'b0;
      end
     else 
@@ -23,15 +23,15 @@ module sync_updowncounter (
       // up logic
       if (!load_en & up_pulse) 
         begin
-        count <= count + 17'h00001;
-          if (count + 17'h00001 == 17'h00100 || count + 17'h00001 == 17'h00E10    || count + 17'h00001 == 17'h15180) pulse <= 1'b1;
+        count <= count + 17'h1;
+          if ((count + 17'h1 )== 17'h100) || ((count + 17'h1) == 17'hE10  )  || ((count + 17'h1) == 17'h15180) pulse <= 1'b1;
           else if (count==17'h15181) count<=17'h0;
         end
       // downlogic
          else if (load_en & down_pulse & load_pulse & count != 17'h00000) 
         begin
-        count <= count - 17'h00001;
-        if (count - 17'h00001 == 17'h00100 || count - 17'h00001 == 17'h00E10 || count - 17'h00001 == 17'h15180) pulse <= 1'b1;
+        count <= count - 17'h1;
+          if ((count - 17'h1) == 17'h100) || ((count - 17'h)1 == 17'hE10) || (count - 17'h1 )== 17'h15180) pulse <= 1'b1;
       end
     end
   end
