@@ -19,9 +19,13 @@ module sync_updowncounter (
      end
     else 
        begin
-      pulse <= 1'b0;   
+      pulse <= 1'b0;
+     if (load_en && load_pulse)
+	 begin
+        count <= 17'h15180;   // load 86400
+      end	  
       // up logic
-      if (!load_en & up_pulse) 
+      else if (!load_en & up_pulse) 
         begin
         count <= count + 17'h1;
           if ((count + 17'h1 )== 17'h100) || ((count + 17'h1) == 17'hE10  )  || ((count + 17'h1) == 17'h15180) pulse <= 1'b1;
