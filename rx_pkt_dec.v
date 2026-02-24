@@ -1,94 +1,68 @@
 module packet_decoder (
-    input  logic         clk,               //input clock
-    input  logic         rst_n,             // asynchronus active low reset
-
-    input  logic         fifo_out_valid,    //valid is there if fifo has valid data
-  input  logic [511:0] fifo_out_data,      //fifo 512 bit data
-
-    input  logic         tx_valid,        //valid from transmitter
-    input  logic         rx_ready, //indicates receiver is ready to take data
-
-    output logic         flit_en,     //output for packet decoder
-    output logic         flit_valid,   //output indicated flit is valid
-  output logic [255:0] flit_data,      //flit output data 
-
-    output logic         dp,     //data parity
-    output logic         cp,     //clock parity
-  output logic [204:0] rsvd,   //reseved 
-  output logic [1:0]   cxsmaxpktperflit, //max no.of packets per flit
-  output logic [1:0]   cxsdataflitwidth, // width of packet
-    output logic         cxs_last, //last data
-  output logic [43:0]  cxs_cntl, //control information
-
-    output logic         segment_valid,  //input to segment counter
-    output logic         segment_start,  //start of segment
-    output logic         segment_last,  // last segment
-
-    output logic         decoder_error, //error in data of decoder
-    output logic         packet_drop    //error occurs iinterface violation
+    input  logic         clk,               // input clock
+    input  logic         rst_n,             // asynchronous active-low reset
+    input  logic         fifo_out_valid,    // fifo has valid data
+    input  logic [511:0] fifo_out_data,     // fifo 512-bit data
+    input  logic         tx_valid,           // transmitter valid
+    input  logic         rx_ready,            // receiver ready
+    output logic         flit_en,
+    output logic         flit_valid,
+    output logic [255:0] flit_data,
+    output logic         dp,
+    output logic         cp,
+    output logic [204:0] rsvd,
+    output logic [1:0]   cxsmaxpktperflit,
+    output logic [1:0]   cxsdataflitwidth,
+    output logic         cxs_last,
+    output logic [43:0]  cxs_cntl,
+    output logic         segment_valid,
+    output logic         segment_start,
+    output logic         segment_last,
+    output logic         decoder_error,
+    output logic         packet_drop
 );
 
-    typedef enum logic [1:0] { IDLE, FLIT0, FLIT1 } state_t;
-    state_t state;
+    /* -------- State encoding (NO enum) -------- */
+    parameter logic [1:0]
+        IDLE  = 2'b00,
+        FLIT0 = 2'b01,
+        FLIT1 = 2'b10;
 
+    logic [1:0] state;
     logic [511:0] fifo_reg;
 
-    /* ---------------- FSM + FIFO capture ---------------- */
+    /* -------- FIFO capture -------- */
     always_ff @(posedge clk or negedge rst_n)
-        if (!rst_n)    fifo_reg <= 1'b0;
-        else if (state == IDLE & fifo_out_valid & tx_valid & rx_ready) 
-           fifo_reg <= fifo_out_data;
-    always_ff @(posedge clk or negedge rst_n)
-      if (!rst_n) state <= 1'b0
-       else if (state == IDLE & fifo_out_valid & tx_valid & rx_ready) 
-          state <= FLIT0; 
-       else if (state == FLIT0 & rx_ready) state <= FLIT1;
-       else if (state == FLIT1 & rx_ready) state <= IDLE;
-    /* ---------------- Flit outputs ---------------- */
-    always_ff @(posedge clk or negedge rst_n)
-      if (!rst_n)  flit_en <= 1'b0; 
-      else if (rx_ready & state == FLIT0)  flit_en <= 1'b1;
-   always_ff @(posedge clk or negedge rst_n)
-     if (!rst_n)  flit_valid <= 1'b0; 
-      else if (rx_ready & state == FLIT0)  flit_valid <= 1'b1;
-  always_ff @(posedge clk or negedge rst_n)
-    if (!rst_n)  flit_data <= 1'b0; 
-     else if (rx_ready & state == FLIT0)   flit_data <= fifo_reg[255:0];
-   always_ff @(posedge clk or negedge rst_n)
-     if (!rst_n)  segment_valid <= 1'b0; 
-  else if (rx_ready & state == FLIT0)   segment_valid <= 1'b1;
-  always_ff @(posedge clk or negedge rst_n)
-    if (!rst_n)  segment_start <= 1'b0; 
-  else if (rx_ready & state == FLIT0)   segment_start <= 1'b1;
-  always_ff @(posedge clk or negedge rst_n)
-      if (!rst_n)  flit_en <= 1'b0; 
-      else if (rx_ready & state == FLIT1)  flit_en <= 1'b1;
-   always_ff @(posedge clk or negedge rst_n)
-     if (!rst_n)  flit_valid <= 1'b0; 
-     else if (rx_ready & state == FLIT1)   flit_valid <= 1'b1;
-  always_ff @(posedge clk or negedge rst_n)
-    if (!rst_n)  flit_data <= 1'b0; 
-  else if (rx_ready & state == FLIT1)   flit_data <= fifo_reg[511:256];
-   always_ff @(posedge clk or negedge rst_n)
-     if (!rst_n)  segment_valid <= 1'b0; 
-  else if (rx_ready & state == FLIT1)   segment_valid <= 1'b1;
-  always_ff @(posedge clk or negedge rst_n)
-    if (!rst_n)  segment_start <= 1'b0; 
-  else if (rx_ready & state == FLIT1)   segment_start <= 1'b1;
-  always_ff @(posedge clk or negedge rst_n)
-    if (!rst_n)  segment_last <= 1'b0; 
-  else if (rx_ready & state == FLIT1)   segment_last <= 1'b1;
-  always_ff @(posedge clk or negedge rst_n)
-    if (!rst_n)  cxs_last <= 1'b0; 
-  else if (rx_ready & state == FLIT1)   cxs_last <= 1'b1;    
+        if (!rst_n) fifo_reg <= 1'b0;
+        else if (state == IDLE & fifo_out_valid & tx_valid & rx_ready)
+            fifo_reg <= fifo_out_data;
 
-    /* ---------------- Header fields ---------------- */
-    assign { dp, cp, rsvd,
-             cxsmaxpktperflit,
-             cxsdataflitwidth,
+    /* -------- FSM -------- */
+    always_ff @(posedge clk or negedge rst_n)
+        if (!rst_n) state <= IDLE;
+        else if (state == IDLE  & fifo_out_valid & tx_valid & rx_ready)
+            state <= FLIT0;
+        else if (state == FLIT0 & rx_ready) state <= FLIT1;
+        else if (state == FLIT1 & rx_ready) state <= IDLE;
+    /* -------- Flit & Segment outputs (single always_ff) -------- */
+    always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n)
+    {flit_en,flit_valid,segment_valid,segment_start,segment_last,cxs_last, flit_data } <= 1'b0;
+    else 
+      begin
+        { flit_en, flit_valid, segment_valid,segment_start, segment_last, cxs_last, flit_data } <= 1'b0;
+        if (rx_ready & state == FLIT0)
+            { flit_en, flit_valid, segment_valid,segment_start, segment_last, cxs_last,flit_data } <= {1'b1,1'b1,1'b1,1'b1,1'b0,1'b0,fifo_reg[255:0]};
+        else if (rx_ready & state == FLIT1)
+            { flit_en, flit_valid, segment_valid, segment_start,segment_last, cxs_last,flit_data } <= {1'b1,1'b1,1'b1,1'b0, 1'b1,1'b1,fifo_reg[511:256] };
+    end
+end
+
+    /* -------- Header decode -------- */
+    assign { dp, cp, rsvd,cxsmaxpktperflit,cxsdataflitwidth,
              cxs_cntl } = fifo_reg[255:0];
 
-    /* ---------------- Status ---------------- */
+    /* -------- Status -------- */
     assign decoder_error = 1'b0;
     assign packet_drop   = 1'b0;
 
